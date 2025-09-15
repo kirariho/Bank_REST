@@ -1,0 +1,52 @@
+databaseChangeLog:
+  - changeSet:
+      id: 7-insert-initial-roles
+      author: postgres
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: roles
+      changes:
+        - insert:
+            tableName: roles
+            columns:
+              - column:
+                  name: name
+                  value: ADMIN
+        - insert:
+            tableName: roles
+            columns:
+              - column:
+                  name: name
+                  value: USER
+  - changeSet:
+      id: 8-assign-roles-to-users
+      author: postgres
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: user_roles
+        - tableExists:
+            tableName: users
+        - sqlCheck:
+            expectedResult: 2
+            sql: SELECT COUNT(*) FROM roles WHERE name IN ('ADMIN', 'USER')
+      changes:
+        - insert:
+            tableName: user_roles
+            columns:
+              - column:
+                  name: user_id
+                  valueComputed: (SELECT id FROM users WHERE username = 'admin')
+              - column:
+                  name: role_id
+                  valueComputed: (SELECT id FROM roles WHERE name = 'ADMIN')
+        - insert:
+            tableName: user_roles
+            columns:
+              - column:
+                  name: user_id
+                  valueComputed: (SELECT id FROM users WHERE username = 'user')
+              - column:
+                  name: role_id
+                  valueComputed: (SELECT id FROM roles WHERE name = 'USER')

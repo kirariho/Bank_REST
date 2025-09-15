@@ -1,0 +1,90 @@
+databaseChangeLog:
+  - changeSet:
+      id: 5-insert-initial-users
+      author: postgres
+      preConditions:
+      - onFail: MARK_RAN
+      - tableExists:
+          tableName: users
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 1
+              - column:
+                  name: username
+                  value: admin
+              - column:
+                  name: password
+                  value: $2a$10$fQmMOBJlgtqc72Lh4IW/kepwDrVRMzZy3j913kXgMG/gE338Wi3ES # Хэш для admin123
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 2
+              - column:
+                  name: username
+                  value: user
+              - column:
+                  name: password
+                  value: $2a$10$AyJeN0ygeHTa08NWWb0le.P8S5voEtG9crC5hgfSSDzKkarm8Wv0m # Хэш для user123
+              - column: 
+                  name: enabled
+                  valueBoolean: true
+
+  - changeSet:
+      id: 6-insert-initial-cards
+      author: postgres
+      preConditions:
+      - onFail: MARK_RAN
+      - tableExists:
+          tableName: cards
+      changes:
+        - insert:
+            tableName: cards
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 1
+              - column:
+                  name: card_number_encrypted
+                  value: u7sTHhR67cGGtJbiEqVseddn5/gvIt2KYz3OZhEWnAk=
+              - column:
+                  name: owner_id
+                  valueNumeric: 1 # admin
+              - column:
+                  name: expiry_date
+                  value: "2027-12-31"
+              - column:
+                  name: status
+                  value: ACTIVE
+              - column:
+                  name: balance
+                  valueNumeric: 10000.00
+        - insert:
+            tableName: cards
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 2
+              - column:
+                  name: card_number_encrypted
+                  value: QtOt3EiLcBwsQ0XE5Inb4Ndn5/gvIt2KYz3OZhEWnAk=
+              - column:
+                  name: owner_id
+                  valueNumeric: 2 # user
+              - column:
+                  name: expiry_date
+                  value: "2026-06-30"
+              - column:
+                  name: status
+                  value: ACTIVE
+              - column:
+                  name: balance
+                  valueNumeric: 5000.00

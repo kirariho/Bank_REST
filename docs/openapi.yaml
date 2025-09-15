@@ -1,0 +1,306 @@
+openapi: 3.1.0
+info:
+  title: Bank Cards Management API
+  version: 1.0.0
+  description: API для управления банковскими картами, пользователями и переводами.
+servers:
+  - url: http://localhost:8080/api
+    description: Локальный сервер разработки
+
+paths:
+  /auth/register:
+    post:
+      summary: Регистрация нового пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserDTO'
+            example:
+              username: user1
+              password: password123
+      responses:
+        '201':
+          description: Пользователь успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+              example:
+                id: 1
+                username: user1
+                enabled: true
+                roles: ["USER"]
+
+  /auth/login:
+    post:
+      summary: Аутентификация пользователя
+      parameters:
+        - in: query
+          name: username
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: password
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: JWT-токен пользователя
+          content:
+            application/json:
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+  /users:
+    post:
+      summary: Создание пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserDTO'
+            example:
+              username: user2
+              password: pass456
+      responses:
+        '201':
+          description: Пользователь создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+              example:
+                id: 2
+                username: user2
+                enabled: true
+                roles: ["USER"]
+    get:
+      summary: Получение списка всех пользователей
+      responses:
+        '200':
+          description: Список пользователей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserDTO'
+              example:
+                - id: 1
+                  username: user1
+                  enabled: true
+                  roles: ["USER"]
+                - id: 2
+                  username: user2
+                  enabled: true
+                  roles: ["USER"]
+
+  /cards:
+    post:
+      summary: Создание новой карты
+      parameters:
+        - in: query
+          name: ownerId
+          schema:
+            type: integer
+          required: true
+        - in: query
+          name: rawCardNumber
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: expiryDateStr
+          schema:
+            type: string
+            format: date
+          required: true
+        - in: query
+          name: initialBalance
+          schema:
+            type: number
+            format: float
+          required: true
+      responses:
+        '201':
+          description: Карта создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardDTO'
+              example:
+                id: 1
+                maskedCardNumber: "**** **** **** 1234"
+                ownerUsername: "user1"
+                expiryDate: "12/25"
+                balance: 1000.0
+                status: ACTIVE
+
+  /cards/user/{ownerId}:
+    get:
+      summary: Получение списка карт пользователя
+      parameters:
+        - in: path
+          name: ownerId
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: Список карт пользователя
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CardDTO'
+              example:
+                - id: 1
+                  maskedCardNumber: "**** **** **** 1234"
+                  ownerUsername: "user1"
+                  expiryDate: "12/25"
+                  balance: 1000.0
+                  status: ACTIVE
+
+  /cards/{cardId}/balance:
+    put:
+      summary: Обновление баланса карты
+      parameters:
+        - in: path
+          name: cardId
+          schema:
+            type: integer
+          required: true
+        - in: query
+          name: newBalance
+          schema:
+            type: number
+            format: float
+          required: true
+      responses:
+        '200':
+          description: Баланс карты обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardDTO'
+              example:
+                id: 1
+                maskedCardNumber: "**** **** **** 1234"
+                ownerUsername: "user1"
+                expiryDate: "12/25"
+                balance: 1500.0
+                status: ACTIVE
+
+  /cards/{cardId}:
+    delete:
+      summary: Удаление карты
+      parameters:
+        - in: path
+          name: cardId
+          schema:
+            type: integer
+          required: true
+      responses:
+        '204':
+          description: Карта удалена
+
+  /transfers:
+    post:
+      summary: Перевод между картами
+      parameters:
+        - in: query
+          name: fromCardId
+          schema:
+            type: integer
+          required: true
+        - in: query
+          name: toCardId
+          schema:
+            type: integer
+          required: true
+        - in: query
+          name: amount
+          schema:
+            type: number
+            format: float
+          required: true
+      responses:
+        '200':
+          description: Информация о картах после перевода
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferResponse'
+              example:
+                fromCard:
+                  id: 1
+                  maskedCardNumber: "**** **** **** 1234"
+                  ownerUsername: "user1"
+                  expiryDate: "12/25"
+                  balance: 800.0
+                  status: ACTIVE
+                toCard:
+                  id: 2
+                  maskedCardNumber: "**** **** **** 5678"
+                  ownerUsername: "user2"
+                  expiryDate: "11/26"
+                  balance: 1200.0
+                  status: ACTIVE
+
+components:
+  schemas:
+    CreateUserDTO:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required:
+        - username
+        - password
+
+    UserDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        enabled:
+          type: boolean
+        roles:
+          type: array
+          items:
+            type: string
+
+    CardDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        maskedCardNumber:
+          type: string
+        ownerUsername:
+          type: string
+        expiryDate:
+          type: string
+        balance:
+          type: number
+          format: float
+        status:
+          type: string
+          enum: [ACTIVE, BLOCKED, EXPIRED]
+
+    TransferResponse:
+      type: object
+      properties:
+        fromCard:
+          $ref: '#/components/schemas/CardDTO'
+        toCard:
+          $ref: '#/components/schemas/CardDTO'

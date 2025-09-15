@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: bank-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: bankdb
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d bankdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - bank-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bank-app
+    env_file:
+      - .env.docker
+    ports:
+      - "${SERVER_PORT}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - bank-network
+
+volumes:
+  db_data:
+
+networks:
+  bank-network:
+    driver: bridge

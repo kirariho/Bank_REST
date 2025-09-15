@@ -1,0 +1,12 @@
+target
+**/target
+*.log
+.git
+.gitignore
+.idea
+.vscode
+*.iml
+.DS_Store
+node_modules
+run.bat
+.env
