@@ -3,8 +3,8 @@ databaseChangeLog:
       id: 5-insert-initial-users
       author: postgres
       preConditions:
-      - onFail: MARK_RAN
-      - tableExists:
+       onFail: MARK_RAN
+       tableExists:
           tableName: users
       changes:
         - insert:
@@ -42,9 +42,16 @@ databaseChangeLog:
       id: 6-insert-initial-cards
       author: postgres
       preConditions:
-      - onFail: MARK_RAN
-      - tableExists:
-          tableName: cards
+       onFail: MARK_RAN
+       and:
+        - tableExists:
+            tableName: cards
+        - sqlCheck:
+            expectedResult: 2
+            sql: SELECT COUNT(*) FROM users WHERE username IN ('admin', 'user')
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM cards WHERE owner_id IN (1, 2) 
       changes:
         - insert:
             tableName: cards

@@ -48,14 +48,21 @@ public class UserServiceTest {
         user.setUsername("admin");
         user.setPassword("encodedPassword");
         user.setEnabled(true);
+        user.setRoles(new HashSet<>()); // Инициализируем roles
 
         userRole = new Role();
         userRole.setId(1L);
         userRole.setName("USER");
+        user.getRoles().add(userRole);
 
         when(roleRepository.findByName("USER")).thenReturn(userRole);
         when(passwordEncoder.encode(any(String.class))).thenReturn("encodedPassword");
-        when(userRepository.save(any(User.class))).thenReturn(user);
+        // Мок для userRepository.save возвращает входной объект User
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User savedUser = invocation.getArgument(0);
+            savedUser.setId(1L); // Устанавливаем ID, чтобы эмулировать сохранение
+            return savedUser;
+        });
     }
 
     @Test
@@ -67,6 +74,8 @@ public class UserServiceTest {
         UserDTO userDTO = userService.createUser(dto);
         assertEquals("newuser", userDTO.getUsername());
         assertEquals(true, userDTO.isEnabled());
+        assertEquals(1, userDTO.getRoles().size());
+        assertEquals("USER", userDTO.getRoles().iterator().next().getName());
     }
 
     @Test
@@ -93,5 +102,7 @@ public class UserServiceTest {
         List<UserDTO> users = userService.getAllUsers();
         assertEquals(1, users.size());
         assertEquals("admin", users.get(0).getUsername());
+        assertEquals(1, users.get(0).getRoles().size());
+        assertEquals("USER", users.get(0).getRoles().iterator().next().getName());
     }
 }

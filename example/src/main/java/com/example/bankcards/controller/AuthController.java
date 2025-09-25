@@ -6,7 +6,6 @@ import com.example.bankcards.entity.Role;
 import com.example.bankcards.repository.RoleRepository;
 import com.example.bankcards.security.JwtUtil;
 import com.example.bankcards.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -25,17 +24,18 @@ import java.util.Set;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationManager authenticationManager;
+    private final UserService userService;
+    private final JwtUtil jwtUtil;
+    private final RoleRepository roleRepository;
 
-    @Autowired
-    private UserService userService;
+    public AuthController(AuthenticationManager authenticationManager, UserService userService, JwtUtil jwtUtil, RoleRepository roleRepository){
+        this.authenticationManager = authenticationManager;
+        this.userService = userService;
+        this.jwtUtil = jwtUtil;
+        this.roleRepository = roleRepository;
 
-    @Autowired
-    private JwtUtil jwtUtil;
-
-    @Autowired
-    private RoleRepository roleRepository;
+    } 
 
     /**
      * Регистрирует нового пользователя с ролью USER по умолчанию.

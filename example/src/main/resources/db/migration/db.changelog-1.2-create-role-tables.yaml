@@ -2,6 +2,11 @@ databaseChangeLog:
   - changeSet:
       id: 3-create-roles-table
       author: postgres
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          tableExists:
+            tableName: roles
       changes:
         - createTable:
             tableName: roles
@@ -16,38 +21,21 @@ databaseChangeLog:
                   name: name
                   type: VARCHAR(50)
                   constraints:
-                    nullable: true  
-  - changeSet:
-      id: 3-update-roles-name
-      author: postgres
-      changes:
-        - sql:
-            sql: UPDATE roles SET name = 'DEFAULT' WHERE name IS NULL;
-  - changeSet:
-      id: 3-add-not-null-constraint
-      author: postgres
-      changes:
-        - addNotNullConstraint:
-            tableName: roles
-            columnName: name
-            columnDataType: VARCHAR(50)
-  - changeSet:
-      id: 3-add-unique-constraint
-      author: postgres
-      changes:
-        - addUniqueConstraint:
-            tableName: roles
-            columnNames: name
-            constraintName: uk_roles_name
+                    nullable: true 
+                    unique: true 
   - changeSet:
       id: 4-create-user-roles-table
       author: postgres
       preConditions:
-        - onFail: MARK_RAN
-        - tableExists:
-            tableName: users
-        - tableExists:
-            tableName: roles
+         onFail: MARK_RAN
+         and:
+          - tableExists:
+              tableName: users
+          - tableExists:
+              tableName: roles
+          - not:
+            tableExists:
+              tableName: user_roles
       changes:
         - createTable:
             tableName: user_roles
@@ -77,6 +65,15 @@ databaseChangeLog:
   - changeSet: 
       id: 4-create-user-roles-index
       author: postgres
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - sqlCheck:
+              expectedResult: 1 
+              sql: SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'user_roles'
+          - not:
+            indexExists:
+              indexName: idx_user_roles_user_role
       changes:
         - createIndex:
             tableName: user_roles

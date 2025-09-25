@@ -1,6 +1,8 @@
 package com.example.bankcards.repository;
 
 import com.example.bankcards.entity.Card;
+import com.example.bankcards.entity.User;
+
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -19,4 +21,7 @@ public interface CardRepository extends JpaRepository<Card, Long> {
      * @return Список карт пользователя.
      */
     List<Card> findByOwnerId(Long ownerId);
-}
+    List<Card> findByOwner(User owner);
+    List<Card> findByOwnerUsername(String username);
+
+}   

@@ -2,7 +2,8 @@ package com.example.bankcards.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -11,6 +12,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+
+import javax.crypto.SecretKey;
 
 /**
  * Утилита для работы с JWT-токенами.
@@ -23,6 +26,14 @@ public class JwtUtil {
 
     @Value("${jwt.expiration:86400000}") // 24 часа по умолчанию
     private long JWT_EXPIRATION;
+
+    /**
+     * Создает SecretKey для подписи токенов.
+     * @return SecretKey для подписи токенов
+     */
+    private SecretKey getSigningKey(){
+        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+    }
 
     /**
      * Извлекает имя пользователя из токена.
@@ -54,7 +65,7 @@ public class JwtUtil {
      */
     private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(SECRET_KEY.getBytes())
+                .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
@@ -84,7 +95,7 @@ public class JwtUtil {
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + JWT_EXPIRATION))
-                .signWith(SignatureAlgorithm.HS256, SECRET_KEY.getBytes())
+                .signWith(getSigningKey())
                 .compact();
     }
 

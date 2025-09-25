@@ -2,7 +2,12 @@ package com.example.bankcards.entity;
 
 import com.example.bankcards.util.EncryptionUtil;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDate;
 import java.math.BigDecimal;
@@ -13,7 +18,12 @@ import java.math.BigDecimal;
  */
 @Entity
 @Table(name = "cards")
-@Data
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = {"cardNumberEncrypted", "owner"})
 public class Card {
 
     /**
@@ -21,6 +31,7 @@ public class Card {
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     /**

@@ -20,7 +20,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final UserDetailsServiceImpl userDetailsService;
 
     /**
      * Настраивает цепочку фильтров безопасности с ролевым доступом.
@@ -32,17 +31,17 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf().disable()
-            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            .and()
-            .authorizeHttpRequests()
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(authorize -> authorize
+            
             .requestMatchers("/api/auth/**").permitAll() // Открытый доступ для аутентификации
             .requestMatchers("/api/cards/admin/**").hasRole("ADMIN") // Только для ADMIN
             .requestMatchers("/api/users/**").hasRole("ADMIN") // Только для ADMIN
             .requestMatchers("/api/**").authenticated()
             .requestMatchers("/api/cards/user/**", "/api/transfers/**").hasRole("USER") // Только для USER
             .anyRequest().authenticated()
-            .and()
+            )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

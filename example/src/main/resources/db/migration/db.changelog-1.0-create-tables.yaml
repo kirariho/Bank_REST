@@ -2,6 +2,11 @@ databaseChangeLog:
   - changeSet:
       id: 1-create-users-table
       author: postgres
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          tableExists:
+            tableName: users
       changes:
         - createTable:
             tableName: users
@@ -30,6 +35,11 @@ databaseChangeLog:
   - changeSet:
       id: 2-create-cards-table
       author: postgres
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          tableExists:
+            tableName: cards
       changes:
         - createTable:
             tableName: cards
@@ -64,6 +74,20 @@ databaseChangeLog:
                   name: balance
                   type: NUMERIC(15,2)
                   defaultValueNumeric: 0.00
+  - changeSet:
+      id: 2-add-cards-foreign-key
+      author: postgres
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - tableExists:
+              tableName: cards
+          - tableExists:
+              tableName: users
+          - not:
+              foreignKeyConstraintExists:
+                foreignKeyName: fk_cards_owner
+      changes:
         - addForeignKeyConstraint:
             baseTableName: cards
             baseColumnNames: owner_id  

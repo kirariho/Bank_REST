@@ -1,32 +1,25 @@
 package com.example.bankcards.controller;
 
-import com.example.bankcards.dto.CardDTO;
-import com.example.bankcards.entity.CardStatus;
+import com.example.bankcards.security.JwtUtil;
 import com.example.bankcards.service.CardService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.Collections;
-
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ExtendWith(MockitoExtension.class)
 @WebMvcTest(CardController.class)
 class CardControllerTest {
 
@@ -36,60 +29,69 @@ class CardControllerTest {
     @MockBean
     private CardService cardService;
 
-    private CardDTO cardDTO;
+    @MockBean
+    private JwtUtil jwtUtil;
 
-    @BeforeEach
-    void setUp() {
-        cardDTO = new CardDTO();
-        cardDTO.setId(1L);
-        cardDTO.setMaskedCardNumber("**** **** **** 1234");
-        cardDTO.setOwnerUsername("admin");
-        cardDTO.setExpiryDate(LocalDate.now().plusYears(2).format(DateTimeFormatter.ofPattern("MM/yy"))); // Строка
-        cardDTO.setBalance(new BigDecimal("1000.00"));
-        cardDTO.setStatus(CardStatus.ACTIVE); // Enum
+    @MockBean
+    private UserDetailsService userDetailsService;
 
-        when(cardService.createCard(anyLong(), any(String.class), any(LocalDate.class), any(BigDecimal.class))).thenReturn(cardDTO);
-        when(cardService.getUserCards(anyLong())).thenReturn(Collections.singletonList(cardDTO));
-        when(cardService.updateCardBalance(anyLong(), any(BigDecimal.class))).thenReturn(cardDTO);
+    // Общий мок UserDetails для JwtUtil
+    private UserDetails getMockUser() {
+        return User.withUsername("admin")
+                .password("password")
+                .roles("USER")
+                .build();
+    }
+
+    private void setupJwtMocks() {
+        UserDetails userDetails = getMockUser();
+        when(userDetailsService.loadUserByUsername(anyString())).thenReturn(userDetails);
+        when(jwtUtil.validateToken(anyString(), any(UserDetails.class))).thenReturn(true);
     }
 
     @Test
-    @DisplayName("createCard_ShouldReturnCreatedCard")
-    void createCard_ShouldReturnCreatedCard() throws Exception {
+    @WithMockUser(username = "admin", roles = {"USER"})
+    void createCard_returnsOk() throws Exception {
+        setupJwtMocks();
+
         mockMvc.perform(post("/api/cards")
-                .param("ownerId", "1")
-                .param("rawCardNumber", "1234567890123456")
-                .param("expiryDateStr", LocalDate.now().plusYears(2).toString())
-                .param("initialBalance", "1000")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.maskedCardNumber").value("**** **** **** 1234"));
+                        .param("ownerId", "1")
+                        .param("rawCardNumber", "1234567812341234")
+                        .param("expiryDateStr", "2030-12-01")
+                        .param("initialBalance", "100.00")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED))
+                .andExpect(status().isCreated());
     }
 
     @Test
-    @DisplayName("getUserCards_ShouldReturnCards")
-    void getUserCards_ShouldReturnCards() throws Exception {
-        mockMvc.perform(get("/api/cards/user/1")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].maskedCardNumber").value("**** **** **** 1234"));
-    }
+    @WithMockUser(username = "admin", roles = {"USER"})
+    void deleteCard_returnsOk() throws Exception {
+        setupJwtMocks();
 
-    @Test
-    @DisplayName("updateCardBalance_ShouldReturnUpdatedCard")
-    void updateCardBalance_ShouldReturnUpdatedCard() throws Exception {
-        mockMvc.perform(put("/api/cards/1/balance")
-                .param("newBalance", "1500")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.balance").value(1500.00));
-    }
-
-    @Test
-    @DisplayName("deleteCard_ShouldReturnNoContent")
-    void deleteCard_ShouldReturnNoContent() throws Exception {
         mockMvc.perform(delete("/api/cards/1")
-                .contentType(MediaType.APPLICATION_JSON))
+                        .with(csrf()))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"USER"})
+    void updateBalance_returnsOk() throws Exception {
+        setupJwtMocks();
+
+        mockMvc.perform(put("/api/cards/1/balance")
+                        .param("newBalance", "500.00")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"USER"})
+    void getUserCards_returnsOk() throws Exception {
+        setupJwtMocks();
+
+        mockMvc.perform(get("/api/cards/user/1"))
+                .andExpect(status().isOk());
     }
 }

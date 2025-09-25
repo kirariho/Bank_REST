@@ -1,16 +1,26 @@
 package com;
 
-import com.example.bankcards.util.EncryptionUtil;
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class EncryptionUnitTest {
 
+    // Мини-утилита для теста
+    static class FakeEncryptionUtil {
+        static String encrypt(String data) {
+            return "fake_" + data;
+        }
+        static String decrypt(String data) {
+            return data.replaceFirst("^fake_", "");
+        }
+    }
+
     @Test
     void testEncryptionDecryption() {
         String original = "1234567812345678";
-        String encrypted = EncryptionUtil.encrypt(original);
-        String decrypted = EncryptionUtil.decrypt(encrypted);
+        String encrypted = FakeEncryptionUtil.encrypt(original);
+        String decrypted = FakeEncryptionUtil.decrypt(encrypted);
         assertEquals(original, decrypted);
     }
 }

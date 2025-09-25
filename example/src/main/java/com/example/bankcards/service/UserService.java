@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.bankcards.dto.CreateUserDTO;
 import com.example.bankcards.dto.UserDTO;
@@ -17,15 +17,18 @@ import com.example.bankcards.repository.RoleRepository;
 import com.example.bankcards.repository.UserRepository;
 
 @Service
+@Transactional(readOnly = true)
 public class UserService {
-    @Autowired
-    private UserRepository userRepository;
+    
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    public UserService(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     /**
      * Создаёт нового пользователя с ролью USER по умолчанию.
@@ -33,6 +36,13 @@ public class UserService {
      * @param dto данные для создания пользователя
      * @return UserDTO созданного пользователя
      */
+    public class RoleNotFoundException extends RuntimeException {
+    public RoleNotFoundException(String message) {
+        super(message);
+    }
+    }
+
+    @Transactional
     public UserDTO createUser(CreateUserDTO dto){
         User user = new User();
         user.setUsername(dto.getUsername());
@@ -40,6 +50,9 @@ public class UserService {
         user.setEnabled(true);
 
         Role userRole = roleRepository.findByName("USER");
+        if(userRole == null){
+            throw new RoleNotFoundException("Role USER not found");
+        }
         Set<Role> roles = new HashSet<>();
         roles.add(userRole);
         user.setRoles(roles);
@@ -54,6 +67,7 @@ public class UserService {
      * @param dto данные пользователя для сохранения
      * @return UserDTO сохранённого пользователя
      */
+    @Transactional
     public UserDTO saveUser(UserDTO dto) {
         User user = userRepository.findById(dto.getId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -84,7 +98,8 @@ public class UserService {
         dto.setId(user.getId());
         dto.setUsername(user.getUsername());
         dto.setEnabled(user.isEnabled());
-
+        dto.setRoles(user.getRoles());
+        
         return dto;
     }
 

@@ -3,9 +3,13 @@ databaseChangeLog:
       id: 7-insert-initial-roles
       author: postgres
       preConditions:
-        - onFail: MARK_RAN
+        onFail: MARK_RAN
+        and:
         - tableExists:
             tableName: roles
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM roles WHERE name IN ('ADMIN', 'USER')
       changes:
         - insert:
             tableName: roles
@@ -23,7 +27,8 @@ databaseChangeLog:
       id: 8-assign-roles-to-users
       author: postgres
       preConditions:
-        - onFail: MARK_RAN
+        onFail: MARK_RAN
+        and:
         - tableExists:
             tableName: user_roles
         - tableExists:
@@ -31,6 +36,12 @@ databaseChangeLog:
         - sqlCheck:
             expectedResult: 2
             sql: SELECT COUNT(*) FROM roles WHERE name IN ('ADMIN', 'USER')
+        - sqlCheck:
+            expectedResult: 2
+            sql: SELECT COUNT(*) FROM users WHERE username IN ('admin', 'user')
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM user_roles
       changes:
         - insert:
             tableName: user_roles

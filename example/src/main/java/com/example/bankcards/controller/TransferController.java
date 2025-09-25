@@ -3,7 +3,6 @@ package com.example.bankcards.controller;
 import com.example.bankcards.dto.CardDTO;
 import com.example.bankcards.exception.InsufficientBalanceException;
 import com.example.bankcards.service.CardService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,8 +16,11 @@ import java.math.BigDecimal;
 @RequestMapping("/api/transfers")
 public class TransferController {
 
-    @Autowired
-    private CardService cardService;
+    
+    private final CardService cardService;
+    public TransferController(CardService cardService){
+        this.cardService = cardService;
+    }
 
     /**
      * Выполняет перевод денежных средств между двумя картами.
@@ -31,10 +33,10 @@ public class TransferController {
      * @throws RuntimeException если исходная или целевая карта не найдены.
      */
     @PostMapping
-    public ResponseEntity<TransferResponse> transferMoney(
-            @RequestParam Long fromCardId,
-            @RequestParam Long toCardId,
-            @RequestParam BigDecimal amount) {
+public ResponseEntity<TransferResponse> transferMoney(
+        @RequestParam("fromCardId") Long fromCardId,
+        @RequestParam("toCardId") Long toCardId,
+        @RequestParam("amount") BigDecimal amount) {
 
         CardDTO fromCard = cardService.getUserCards(fromCardId).stream()
                 .filter(c -> c.getId().equals(fromCardId))

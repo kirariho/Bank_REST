@@ -5,7 +5,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,8 +26,11 @@ import com.example.bankcards.service.CardService;
 @RequestMapping("/api/cards")
 public class CardController {
 
-    @Autowired
-    private CardService cardService;
+    private final CardService cardService;
+
+    public CardController (CardService cardService){
+        this.cardService = cardService;
+    }
 
     /**
      * Создаёт новую банковскую карту для указанного пользователя.
@@ -41,10 +43,10 @@ public class CardController {
      */
     @PostMapping
     public ResponseEntity<CardDTO> createCard(
-        @RequestParam Long ownerId,
-        @RequestParam String rawCardNumber,
-        @RequestParam String expiryDateStr,
-        @RequestParam BigDecimal initialBalance) {
+        @RequestParam("ownerId") Long ownerId,
+        @RequestParam("rawCardNumber") String rawCardNumber,
+        @RequestParam("expiryDateStr") String expiryDateStr,
+        @RequestParam("initialBalance") BigDecimal initialBalance) {
         
         LocalDate expiryDate = LocalDate.parse(expiryDateStr, DateTimeFormatter.ISO_LOCAL_DATE);
         CardDTO card = cardService.createCard(ownerId, rawCardNumber, expiryDate, initialBalance);

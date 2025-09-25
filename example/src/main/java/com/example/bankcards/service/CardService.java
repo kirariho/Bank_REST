@@ -6,8 +6,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.bankcards.dto.CardDTO;
 import com.example.bankcards.entity.Card;
@@ -25,13 +25,16 @@ import com.example.bankcards.util.EncryptionUtil;
  * а также для преобразования сущностей в DTO.
  */
 @Service
+@Transactional(readOnly = true)
 public class CardService {
 
-    @Autowired
-    private CardRepository cardRepository;
+    private final CardRepository cardRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+    public CardService(CardRepository cardRepository, UserRepository userRepository) {
+        this.cardRepository = cardRepository;
+        this.userRepository = userRepository;
+    }
 
     /**
      * Создаёт новую карту для указанного пользователя.
@@ -43,6 +46,7 @@ public class CardService {
      * @return DTO созданной карты.
      * @throws RuntimeException если пользователь с указанным ID не найден.
      */
+    @Transactional
     public CardDTO createCard(Long ownerId, String rawCardNumber, LocalDate expiryDate, BigDecimal initialBalance) {
         User owner = userRepository.findById(ownerId)
                 .orElseThrow(() -> new RuntimeException("User not found."));
@@ -52,6 +56,7 @@ public class CardService {
         card.setExpiryDate(expiryDate);
         card.setBalance(initialBalance);
         card.setStatus(CardStatus.ACTIVE);
+        
         card = cardRepository.save(card);
         return toDto(card);
     }
@@ -77,12 +82,14 @@ public class CardService {
      * @throws CardNotFoundException         если карта с указанным ID не найдена.
      * @throws InsufficientBalanceException  если новый баланс отрицательный.
      */
+    @Transactional
     public CardDTO updateCardBalance(Long cardId, BigDecimal newBalance) {
-        Card card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new CardNotFoundException("Card with ID " + cardId + " not found."));
         if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
             throw new InsufficientBalanceException("Balance cannot be negative.");
         }
+        Card card = cardRepository.findById(cardId)
+            .orElseThrow(() -> new CardNotFoundException("Card with ID " + cardId + " not found."));
+
         card.setBalance(newBalance);
         card = cardRepository.save(card);
         return toDto(card);
@@ -94,6 +101,7 @@ public class CardService {
      * @param cardId ID карты.
      * @throws CardNotFoundException если карта не найдена.
      */
+    @Transactional
     public void deleteCard(Long cardId) {
         Card card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new CardNotFoundException("Card not found"));
@@ -128,6 +136,6 @@ public class CardService {
         if (decrypted == null || decrypted.length() < 4) {
             return "**** **** **** ****";
         }
-        return "**** **** **** " + decrypted.substring(decrypted.length());
+        return "**** **** **** " + decrypted.substring(decrypted.length() - 4);
     }
 }
